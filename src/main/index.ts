@@ -9,6 +9,7 @@ import {
   removeTodo,
   updateTodoCompleted,
 } from '../database/database';
+import {autoUpdater} from 'electron-updater';
 
 let mainWindow: BrowserWindow | null = null
 let addWindow: BrowserWindow | null = null
@@ -119,6 +120,7 @@ function registerTodoIpc(): void {
 }
 
 app.whenReady().then(() => {
+  autoUpdater.checkForUpdatesAndNotify();
   electronApp.setAppUserModelId('com.electron')
 
   app.on('browser-window-created', (_, window) => {
@@ -141,3 +143,11 @@ app.on('window-all-closed', () => {
     app.quit()
   }
 })
+
+autoUpdater.on('update-available', () => {
+  console.log('Update available');
+});
+
+autoUpdater.on('update-downloaded', () => {
+  autoUpdater.quitAndInstall();
+});
