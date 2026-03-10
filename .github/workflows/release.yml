@@ -9,6 +9,7 @@ name: Build Release
 
 jobs:
   build-mac:
+    environment: MACOS
     strategy:
       matrix:
         include:
@@ -18,7 +19,7 @@ jobs:
             arch: x64
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
@@ -30,12 +31,12 @@ jobs:
 
       - name: Build and Publish Mac
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.DO_SPACES_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.DO_SPACES_SECRET }}
         run: npm run build:mac -- --${{ matrix.arch }} --publish
 
   build-windows:
+    environment: MACOS
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
@@ -65,6 +66,7 @@ jobs:
         run: npm run build -- --win --publish always
 
   build-linux:
+    environment: MACOS
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
