@@ -12,10 +12,10 @@ jobs:
     strategy:
       matrix:
         include:
-          -os: macos-latest
-          arch: arm64
-          -os: macos-13
-          arch: x64
+          - os: macos-latest
+            arch: arm64
+          - os: macos-13
+            arch: x64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
