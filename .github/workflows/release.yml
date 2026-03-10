@@ -1,4 +1,4 @@
-name: Build and Release Electron App
+name: Build Release
 
 "on":
   push:
@@ -9,7 +9,14 @@ name: Build and Release Electron App
 
 jobs:
   build-mac:
-    runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+        -os: macos-latest
+        arch: arm64
+        -os: macos-13
+        arch: x64
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
 
@@ -19,14 +26,14 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm ci
+        run: npm ci
 
       - name: Build and Publish Mac
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.DO_SPACES_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.DO_SPACES_SECRET }}
-        run: npm run build:mac -- --publish always
+        run: npm run build:mac -- --${{ matrix.arch }} --publish
 
   build-windows:
     runs-on: windows-latest
