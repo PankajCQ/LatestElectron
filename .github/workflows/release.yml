@@ -31,8 +31,8 @@ jobs:
 
       - name: Build and Publish Mac
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.DO_SPACES_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.DO_SPACES_SECRET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: npm run build && npx electron-builder --mac --${{ matrix.arch }} --publish=always
 
   build-windows:
@@ -60,7 +60,6 @@ jobs:
 
       - name: Build and Publish Windows
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.DO_SPACES_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.DO_SPACES_SECRET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: npm run build -- --win --publish always
