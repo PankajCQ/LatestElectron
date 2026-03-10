@@ -52,6 +52,9 @@ jobs:
           ELECTRON_CUSTOM_FILENAME: electron-v{{version}}-{{platform}}-{{arch}}.zip
           ELECTRON_BUILDER_BINARIES_MIRROR: https://github.com/electron-userland/electron-builder-binaries/releases/download/
         run: npm install
+      - name: Debug Electron download URL
+        if: always()
+        run: node -e "const v=require('electron/package.json').version;const p=process.platform;const a=process.arch;const mirror=process.env.ELECTRON_MIRROR||'https://artifacts.electronjs.org/download/';const url=`${mirror}v${v}/electron-v${v}-${p}-${a}.zip`;console.log('Electron download URL:',url)"
 
       - name: Build and Publish Windows
         env:
@@ -78,6 +81,9 @@ jobs:
           ELECTRON_CUSTOM_FILENAME: electron-v{{version}}-{{platform}}-{{arch}}.zip
           ELECTRON_BUILDER_BINARIES_MIRROR: https://github.com/electron-userland/electron-builder-binaries/releases/download/
         run: npm install
+      - name: Debug Electron download URL
+        if: always()
+        run: node -e "const v=require('electron/package.json').version;const p=process.platform;const a=process.arch;const mirror=process.env.ELECTRON_MIRROR||'https://artifacts.electronjs.org/download/';const url=`${mirror}v${v}/electron-v${v}-${p}-${a}.zip`;console.log('Electron download URL:',url)"
 
       - name: Build and Publish Linux
         env:
