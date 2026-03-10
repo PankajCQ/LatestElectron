@@ -26,7 +26,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.DO_SPACES_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.DO_SPACES_SECRET }}
-        run: npm run build -- --mac --publish always
+        run: npm run build:mac -- --publish always
 
   build-windows:
     runs-on: windows-latest
