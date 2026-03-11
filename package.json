@@ -21,6 +21,7 @@
     "build:linux": "electron-vite build && electron-builder --linux"
   },
   "build": {
+    "appId": "com.pankajcq.latestelektron",
     "productName": "LatestElectron"
   },
   "dependencies": {
