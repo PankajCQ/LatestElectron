@@ -22,28 +22,7 @@
   },
   "build": {
     "appId": "com.pankajcq.latestelektron",
-    "productName": "LatestElectron",
-    "publish": {
-      "provider": "s3",
-      "bucket": "test-bucket-electron",
-      "region": "blr1",
-      "endpoint": "https://blr1.digitaloceanspaces.com"
-    },
-    "mac": {
-      "target": [
-        "dmg"
-      ]
-    },
-    "win": {
-      "target": [
-        "nsis"
-      ]
-    },
-    "linux": {
-      "target": [
-        "AppImage"
-      ]
-    }
+    "productName": "LatestElectron"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
