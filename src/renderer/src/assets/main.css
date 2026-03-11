@@ -46,6 +46,15 @@ input {
   padding: 10px 12px;
 }
 
+textarea {
+  border: 1px solid #334062;
+  background: #0b1224;
+  color: #dbe8ff;
+  border-radius: 10px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
 .row {
   display: flex;
   gap: 10px;
@@ -92,6 +101,48 @@ button.danger {
   align-items: center;
   gap: 10px;
   min-width: 0;
+}
+
+.todo-title {
+  flex: 1;
+  text-align: left;
+  background: transparent;
+  color: #dbe8ff;
+  padding: 0;
+  border-radius: 0;
+}
+
+.todo-title:hover {
+  text-decoration: underline;
+}
+
+.todo-detail {
+  background: #121a31;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.todo-detail h2 {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+}
+
+.todo-detail p {
+  margin: 0;
+  color: #c7d4f7;
+  line-height: 1.5;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
 }
 
 .done {

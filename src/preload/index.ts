@@ -25,20 +25,31 @@ contextBridge.exposeInMainWorld('todoAPI', {
   list() {
     return ipcRenderer.invoke('todos:list')
   },
-  create(text: string) {
-    return ipcRenderer.invoke('todos:create', text)
+  create(text: string, description: string) {
+    return ipcRenderer.invoke('todos:create', text, description)
   },
-  createFromWindow(text: string) {
-    return ipcRenderer.invoke('todos:create-from-window', text)
+  createFromWindow(text: string, description: string) {
+    return ipcRenderer.invoke('todos:create-from-window', text, description)
   },
   openAddWindow() {
     return ipcRenderer.invoke('todos:open-add-window')
   },
+  openDetailWindow(todo: { id: number; text: string; description: string; completed: boolean }) {
+    return ipcRenderer.invoke('todos:open-detail-window', todo)
+  },
   closeAddWindow() {
     ipcRenderer.send('todos:add-window-close')
   },
-  onCreated(listener: (todo: { id: number; text: string; completed: boolean }) => void) {
-    const wrappedListener = (_event: Electron.IpcRendererEvent, todo: { id: number; text: string; completed: boolean }) => {
+  closeDetailWindow() {
+    ipcRenderer.send('todos:detail-window-close')
+  },
+  onCreated(
+    listener: (todo: { id: number; text: string; description: string; completed: boolean }) => void,
+  ) {
+    const wrappedListener = (
+      _event: Electron.IpcRendererEvent,
+      todo: { id: number; text: string; description: string; completed: boolean },
+    ) => {
       listener(todo)
     }
     ipcRenderer.on('todos:created', wrappedListener)
@@ -50,6 +61,18 @@ contextBridge.exposeInMainWorld('todoAPI', {
     }
     ipcRenderer.on('todos:show-add-page', wrappedListener)
     return () => ipcRenderer.off('todos:show-add-page', wrappedListener)
+  },
+  onShowDetail(
+    listener: (todo: { id: number; text: string; description: string; completed: boolean }) => void,
+  ) {
+    const wrappedListener = (
+      _event: Electron.IpcRendererEvent,
+      todo: { id: number; text: string; description: string; completed: boolean },
+    ) => {
+      listener(todo)
+    }
+    ipcRenderer.on('todos:show-detail', wrappedListener)
+    return () => ipcRenderer.off('todos:show-detail', wrappedListener)
   },
   toggle(id: number, completed: boolean) {
     return ipcRenderer.invoke('todos:toggle', id, completed)

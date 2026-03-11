@@ -13,6 +13,7 @@ import {autoUpdater} from 'electron-updater';
 
 let mainWindow: BrowserWindow | null = null
 let addWindow: BrowserWindow | null = null
+let detailWindow: BrowserWindow | null = null
 
 function loadWindow(window: BrowserWindow): void {
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
@@ -84,13 +85,45 @@ function createAddWindow(): BrowserWindow {
   return window
 }
 
+function createDetailWindow(todo: { id: number; text: string; description: string; completed: boolean }): BrowserWindow {
+  const window = new BrowserWindow({
+    width: 520,
+    height: 360,
+    show: false,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    autoHideMenuBar: true,
+    parent: mainWindow ?? undefined,
+    modal: false,
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: false,
+    },
+  })
+
+  window.on('closed', () => {
+    detailWindow = null
+  })
+
+  window.webContents.on('did-finish-load', () => {
+    window.webContents.send('todos:show-detail', todo)
+    window.show()
+  })
+
+  loadWindow(window)
+  return window
+}
+
 function registerTodoIpc(): void {
   ipcMain.handle('todos:list', () => listTodos())
 
-  ipcMain.handle('todos:create', (_event, text: string) => createTodo(text))
+  ipcMain.handle('todos:create', (_event, text: string, description: string) =>
+    createTodo(text, description),
+  )
 
-  ipcMain.handle('todos:create-from-window', (_event, text: string) => {
-    const todo = createTodo(text)
+  ipcMain.handle('todos:create-from-window', (_event, text: string, description: string) => {
+    const todo = createTodo(text, description)
     mainWindow?.webContents.send('todos:created', todo)
     return todo
   })
@@ -113,9 +146,28 @@ function registerTodoIpc(): void {
     addWindow = createAddWindow()
   })
 
+  ipcMain.handle(
+    'todos:open-detail-window',
+    (_event, todo: { id: number; text: string; description: string; completed: boolean }) => {
+      if (detailWindow && !detailWindow.isDestroyed()) {
+        detailWindow.webContents.send('todos:show-detail', todo)
+        detailWindow.focus()
+        return
+      }
+
+      detailWindow = createDetailWindow(todo)
+    },
+  )
+
   ipcMain.on('todos:add-window-close', () => {
     if (addWindow && !addWindow.isDestroyed()) {
       addWindow.close()
+    }
+  })
+
+  ipcMain.on('todos:detail-window-close', () => {
+    if (detailWindow && !detailWindow.isDestroyed()) {
+      detailWindow.close()
     }
   })
 }

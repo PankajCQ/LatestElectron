@@ -5,12 +5,14 @@ import { app } from 'electron'
 export type Todo = {
   id: number
   text: string
+  description: string
   completed: boolean
 }
 
 type TodoRow = {
   id: number
   text: string
+  description: string
   completed: number
 }
 
@@ -27,6 +29,7 @@ function mapTodo(row: TodoRow): Todo {
   return {
     id: row.id,
     text: row.text,
+    description: row.description,
     completed: row.completed === 1,
   }
 }
@@ -41,27 +44,33 @@ export function initDatabase() {
     CREATE TABLE IF NOT EXISTS todos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       text TEXT NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
       completed INTEGER NOT NULL DEFAULT 0
     )
   `)
+
+  const columns = db.prepare('PRAGMA table_info(todos)').all() as { name: string }[]
+  if (!columns.some((column) => column.name === 'description')) {
+    db.exec("ALTER TABLE todos ADD COLUMN description TEXT NOT NULL DEFAULT ''")
+  }
 }
 
 export function listTodos(): Todo[] {
   const stmt = getDb().prepare(
-    'SELECT id, text, completed FROM todos ORDER BY id DESC',
+    'SELECT id, text, description, completed FROM todos ORDER BY id DESC',
   )
   const rows = stmt.all() as TodoRow[]
   return rows.map(mapTodo)
 }
 
-export function createTodo(text: string): Todo {
+export function createTodo(text: string, description: string): Todo {
   const insertStmt = getDb().prepare(
-    'INSERT INTO todos (text, completed) VALUES (?, 0)',
+    'INSERT INTO todos (text, description, completed) VALUES (?, ?, 0)',
   )
-  const result = insertStmt.run(text)
+  const result = insertStmt.run(text, description)
 
   const selectStmt = getDb().prepare(
-    'SELECT id, text, completed FROM todos WHERE id = ?',
+    'SELECT id, text, description, completed FROM todos WHERE id = ?',
   )
   const row = selectStmt.get(result.lastInsertRowid) as TodoRow
   return mapTodo(row)
@@ -74,7 +83,7 @@ export function updateTodoCompleted(id: number, completed: boolean): Todo {
   updateStmt.run(completed ? 1 : 0, id)
 
   const selectStmt = getDb().prepare(
-    'SELECT id, text, completed FROM todos WHERE id = ?',
+    'SELECT id, text, description, completed FROM todos WHERE id = ?',
   )
   const row = selectStmt.get(id) as TodoRow | undefined
 
