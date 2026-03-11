@@ -1,3 +1,3 @@
 provider: generic
-url: https://example.com/auto-updates
+url: https://test-bucket-electron.s3.amazonaws.com/pankaj/release/
 updaterCacheDirName: electron-app-updater
