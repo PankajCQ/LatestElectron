@@ -6,6 +6,7 @@ name: Build Release
       - main
     tags:
       - 'v*'
+  workflow_dispatch:
 
 jobs:
   build-mac:
@@ -34,3 +35,10 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: npm run build && npx electron-builder --mac --${{ matrix.arch }} --publish=always
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-${{ matrix.arch }}
+          path: |
+            dist/*.dmg
+          retention-days: 7
