@@ -27,6 +27,7 @@
       "provider": "s3",
       "bucket": "test-bucket-electron",
       "region": "blr1",
+      "endpoint": "https://blr1.digitaloceanspaces.com",
       "path": "pankaj/release/"
     },
     "mac": {
