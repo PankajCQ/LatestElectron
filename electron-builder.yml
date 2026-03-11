@@ -39,7 +39,9 @@ appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
 publish:
-  provider: generic
-  url: https://example.com/auto-updates
+  provider: s3
+  bucket: test-bucket-electron
+  region: us-east-1
+  path: pankaj/release/
 electronDownload:
   mirror: https://artifacts.electronjs.org/
