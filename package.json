@@ -37,7 +37,7 @@
       "path": "pankaj/release/"
     },
     "mac": {
-      "identity": "Pankaj Thakur(6Y723868PK)",
+      "identity": "Developer ID Application: Maanik Sharma (***)",
       "notarize": true,
       "target": [
         "dmg"
