@@ -8,6 +8,7 @@ import {
   listTodos,
   removeTodo,
   updateTodoCompleted,
+  getTodo,
 } from '../database/database';
 import {autoUpdater} from 'electron-updater';
 
@@ -17,9 +18,16 @@ let mainWindow: BrowserWindow | null = null
 let addWindow: BrowserWindow | null = null
 let detailWindow: BrowserWindow | null = null
 
-function loadWindow(window: BrowserWindow): void {
+function loadWindow(window: BrowserWindow, route?: string): void {
+  const hash = route ? `#${route}` : '';
+  console.log('Loading window with route:', route, hash);
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    window.loadURL(process.env['ELECTRON_RENDERER_URL'])
+    window.loadURL(`${process.env['ELECTRON_RENDERER_URL']}${hash}`)
+    return
+  }
+
+  if (route) {
+    window.loadFile(join(__dirname, '../renderer/index.html'), { hash: route })
     return
   }
 
@@ -31,19 +39,41 @@ function getDeepLinkFromArgv(argv: string[]): string | null {
   return argv.find((arg) => arg.startsWith(prefix)) ?? null
 }
 
+function getRouteFromDeepLink(url: string): string | null {
+  try {
+    const parsed = new URL(url)
+    const host = parsed.hostname
+    const path = parsed.pathname.replace(/^\/+/, '')
+    const parts = [host, path].filter(Boolean)
+    if (parts.length === 0) return null
+    return `/${parts.join('/')}`
+  } catch {
+    return null
+  }
+}
+
 function handleDeepLink(url: string): void {
+  const route = getRouteFromDeepLink(url)
+  console.log('Handling deep link:', url, route);
+  if (route) {
+    if (detailWindow && !detailWindow.isDestroyed()) {
+      loadWindow(detailWindow, route)
+      detailWindow.focus()
+      return
+    }
+
+    detailWindow = createDetailWindow({ route })
+    return
+  }
+
   if (!mainWindow || mainWindow.isDestroyed()) {
     mainWindow = createMainWindow()
   }
 
-  if (!mainWindow) return
-
   if (!mainWindow.isVisible()) {
     mainWindow.show()
   }
-
   mainWindow.focus()
-  mainWindow.webContents.send('app:deeplink', url)
 }
 
 function createMainWindow(): BrowserWindow {
@@ -107,7 +137,10 @@ function createAddWindow(): BrowserWindow {
   return window
 }
 
-function createDetailWindow(todo: { id: number; text: string; description: string; completed: boolean }): BrowserWindow {
+function createDetailWindow(options: {
+  todo?: { id: number; text: string; description: string; completed: boolean }
+  route?: string
+}): BrowserWindow {
   const window = new BrowserWindow({
     width: 520,
     height: 360,
@@ -121,6 +154,7 @@ function createDetailWindow(todo: { id: number; text: string; description: strin
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
+      devTools: true
     },
   })
 
@@ -129,11 +163,14 @@ function createDetailWindow(todo: { id: number; text: string; description: strin
   })
 
   window.webContents.on('did-finish-load', () => {
-    window.webContents.send('todos:show-detail', todo)
+    if (options.todo) {
+      window.webContents.send('todos:show-detail', options.todo)
+    }
     window.show()
   })
+  console.log('Loading detail window with options:', options);
 
-  loadWindow(window)
+  loadWindow(window, options.route)
   return window
 }
 
@@ -177,7 +214,7 @@ function registerTodoIpc(): void {
         return
       }
 
-      detailWindow = createDetailWindow(todo)
+      detailWindow = createDetailWindow({ todo })
     },
   )
 
@@ -191,6 +228,9 @@ function registerTodoIpc(): void {
     if (detailWindow && !detailWindow.isDestroyed()) {
       detailWindow.close()
     }
+  })
+  ipcMain.handle('todos:get', (_event, id: number) => {
+    return getTodo(id)
   })
 }
 

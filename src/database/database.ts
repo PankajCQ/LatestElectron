@@ -63,6 +63,14 @@ export function listTodos(): Todo[] {
   return rows.map(mapTodo)
 }
 
+export function getTodo(id: number): Todo | null {
+  const stmt = getDb().prepare(
+    'SELECT id, text, description, completed FROM todos WHERE id = ?',
+  )
+  const row = stmt.get(id) as TodoRow | undefined
+  return row ? mapTodo(row) : null
+}
+
 export function createTodo(text: string, description: string): Todo {
   const insertStmt = getDb().prepare(
     'INSERT INTO todos (text, description, completed) VALUES (?, ?, 0)',

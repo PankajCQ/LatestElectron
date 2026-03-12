@@ -87,4 +87,7 @@ contextBridge.exposeInMainWorld('todoAPI', {
   remove(id: number) {
     return ipcRenderer.invoke('todos:delete', id)
   },
+  getTodo(id: number) {
+    return ipcRenderer.invoke('todos:get', id)
+  },
 })

@@ -1,4 +1,5 @@
-import { FormEvent, useEffect, useState } from 'react'
+import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
 
 type Todo = {
   id: number
@@ -13,13 +14,13 @@ function App(): React.JSX.Element {
   const [newTodoDescription, setNewTodoDescription] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [isAddPage, setIsAddPage] = useState(false)
-  const [detailTodo, setDetailTodo] = useState<Todo | null>(null)
-  const [deepLinkUrl, setDeepLinkUrl] = useState<string | null>(null)
+  const navigate = useNavigate()
+  const location = useLocation()
 
   useEffect(() => {
     const unsubscribe = window.todoAPI.onShowAddPage(() => {
       setIsAddPage(true)
-      setDetailTodo(null)
+      navigate('/add', { replace: true })
     })
 
     void window.todoAPI.list().then(setTodos)
@@ -41,18 +42,8 @@ function App(): React.JSX.Element {
 
   useEffect(() => {
     const unsubscribe = window.todoAPI.onShowDetail((todo) => {
-      setDetailTodo(todo)
       setIsAddPage(false)
-    })
-
-    return () => {
-      unsubscribe()
-    }
-  }, [])
-
-  useEffect(() => {
-    const unsubscribe = window.todoAPI.onDeepLink((url) => {
-      setDeepLinkUrl(url)
+      navigate(`/detail/${todo.id}`, { replace: true })
     })
 
     return () => {
@@ -95,63 +86,92 @@ function App(): React.JSX.Element {
     ? todos.filter((todo) => todo.text.toLowerCase().includes(normalizedSearch))
     : todos
 
-  if (isAddPage) {
-    return (
-      <main className="todo-shell">
-        <h1>Add Todo</h1>
-        <form className="todo-form" onSubmit={createTodo}>
-          <input
-            autoFocus
-            value={newTodoText}
-            onChange={(event) => setNewTodoText(event.target.value)}
-            placeholder="Todo title"
-          />
-          <textarea
-            value={newTodoDescription}
-            onChange={(event) => setNewTodoDescription(event.target.value)}
-            placeholder="Todo description"
-            rows={4}
-          />
-          <div className="row">
-            <button type="submit">Create</button>
-            <button type="button" className="ghost" onClick={() => window.todoAPI.closeAddWindow()}>
-              Cancel
-            </button>
-          </div>
-        </form>
-      </main>
-    )
+  const isDetailRoute = useMemo(() => location.pathname.startsWith('/detail'), [location.pathname])
+
+  const handleAddCancel = (): void => {
+    setNewTodoText('')
+    setNewTodoDescription('')
+    if (isAddPage) {
+      window.todoAPI.closeAddWindow()
+      return
+    }
+    navigate('/', { replace: true })
   }
 
-  if (detailTodo) {
-    return (
-      <main className="todo-shell">
-        <h1>Todo Details</h1>
+  const handleDetailClose = (): void => {
+    if (isDetailRoute) {
+      window.todoAPI.closeDetailWindow()
+    }
+    navigate('/', { replace: true })
+  }
+
+  const addPage = (
+    <main className="todo-shell">
+      <h1>Add Todo</h1>
+      <form className="todo-form" onSubmit={createTodo}>
+        <input
+          autoFocus
+          value={newTodoText}
+          onChange={(event) => setNewTodoText(event.target.value)}
+          placeholder="Todo title"
+        />
+        <textarea
+          value={newTodoDescription}
+          onChange={(event) => setNewTodoDescription(event.target.value)}
+          placeholder="Todo description"
+          rows={4}
+        />
+        <div className="row">
+          <button type="submit">Create</button>
+          <button type="button" className="ghost" onClick={handleAddCancel}>
+            Cancel
+          </button>
+        </div>
+      </form>
+    </main>
+  )
+
+  function DetailPage() {
+  const {id} = useParams();
+  const [detailTodo, setDetailTodo] = useState<Todo | null>(null);
+
+  useEffect(() => {
+    console.log('Route params changed:', id)
+    if (!id) return
+    const todoId = Number(id)
+    if (!Number.isFinite(todoId)) {
+      setDetailTodo(null)
+      return
+    }
+
+    setIsAddPage(false)
+    void window.todoAPI.getTodo(todoId).then((todo) => {
+      console.log('Fetched todo for detail page:', todo)
+      setDetailTodo(todo ?? null)
+    })
+  }, [id])
+
+  return <main className="todo-shell">
+      <h1>Todo Details</h1>
+      {detailTodo ? (
         <div className="todo-detail">
           <h2 className={detailTodo.completed ? 'done' : ''}>{detailTodo.text}</h2>
           <p>{detailTodo.description || 'No description provided.'}</p>
         </div>
-        <div className="row">
-          <button type="button" className="ghost" onClick={() => window.todoAPI.closeDetailWindow()}>
-            Close
-          </button>
-        </div>
-      </main>
-    )
+      ) : (
+        <p>Invalid Todo</p>
+      )}
+      <div className="row">
+        <button type="button" className="ghost" onClick={handleDetailClose}>
+          Close
+        </button>
+      </div>
+    </main>
   }
 
-  return (
+  const listPage = (
     <main className="todo-shell">
       <h1>Todos</h1>
-      {deepLinkUrl ? (
-        <div className="deep-link-banner">
-          <span>Opened from deep link:</span>
-          <code>{deepLinkUrl}</code>
-          <button type="button" className="ghost" onClick={() => setDeepLinkUrl(null)}>
-            Dismiss
-          </button>
-        </div>
-      ) : null}
       <div className="todo-form">
         <input
           value={searchQuery}
@@ -181,7 +201,7 @@ function App(): React.JSX.Element {
             <button
               type="button"
               className={todo.completed ? 'todo-title done' : 'todo-title'}
-              onClick={() => void window.todoAPI.openDetailWindow(todo)}
+              onClick={() => {console.log('Opening detail window for todo:', todo); void window.todoAPI.openDetailWindow(todo)}}
             >
               {todo.text}
             </button>
@@ -192,6 +212,15 @@ function App(): React.JSX.Element {
         ))}
       </ul>
     </main>
+  )
+
+  return (
+    <Routes>
+      <Route path="/" element={listPage} />
+      <Route path="/add" element={addPage} />
+      <Route path="/detail/:id" element={<DetailPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }
 

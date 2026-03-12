@@ -13,19 +13,26 @@ asarUnpack:
   - resources/**
 win:
   executableName: electron-app
+  signingHashAlgorithms:
+    - sha256
+  certificateFile: ${env.WIN_CSC_LINK}
+  certificatePassword: ${env.WIN_CSC_KEY_PASSWORD}
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
+  identity: ${env.MAC_SIGN_IDENTITY}
   extendInfo:
     - NSCameraUsageDescription: Application requests access to the device's camera.
     - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
     - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
-  notarize: false
+  notarize: true
 dmg:
   artifactName: ${name}-${version}.${ext}
 linux:

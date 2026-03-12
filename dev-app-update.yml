@@ -1,3 +1,3 @@
 provider: generic
-url: https://test-bucket-electron.s3.amazonaws.com/pankaj/release/
+url: https://test-bucket-electron.blr1.digitaloceanspaces.com/pankaj/release
 updaterCacheDirName: electron-app-updater

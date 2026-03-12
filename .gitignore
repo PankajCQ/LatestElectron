@@ -3,4 +3,6 @@ dist
 out
 .DS_Store
 .eslintcache
+.env.signing
+certificate.p12
 *.log*

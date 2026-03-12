@@ -21,6 +21,7 @@ type TodoAPI = {
   onDeepLink: (listener: (url: string) => void) => () => void
   toggle: (id: number, completed: boolean) => Promise<Todo>
   remove: (id: number) => Promise<{ ok: true }>
+  getTodo: (id: number) => Promise<Todo | null>
 }
 
 declare global {
