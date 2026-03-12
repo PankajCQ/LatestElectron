@@ -37,7 +37,7 @@
       "path": "pankaj/release/"
     },
     "mac": {
-      "identity": "Developer ID Application: Your Name Pankaj Thakur(6Y723868PK)",
+      "identity": "Pankaj Thakur(6Y723868PK)",
       "notarize": true,
       "target": [
         "dmg"
