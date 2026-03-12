@@ -1,5 +1,5 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
-import { join } from 'path'
+import { join, resolve } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import {
@@ -10,6 +10,8 @@ import {
   updateTodoCompleted,
 } from '../database/database';
 import {autoUpdater} from 'electron-updater';
+
+const PROTOCOL = 'latestElectron'
 
 let mainWindow: BrowserWindow | null = null
 let addWindow: BrowserWindow | null = null
@@ -22,6 +24,26 @@ function loadWindow(window: BrowserWindow): void {
   }
 
   window.loadFile(join(__dirname, '../renderer/index.html'))
+}
+
+function getDeepLinkFromArgv(argv: string[]): string | null {
+  const prefix = `${PROTOCOL}://`
+  return argv.find((arg) => arg.startsWith(prefix)) ?? null
+}
+
+function handleDeepLink(url: string): void {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    mainWindow = createMainWindow()
+  }
+
+  if (!mainWindow) return
+
+  if (!mainWindow.isVisible()) {
+    mainWindow.show()
+  }
+
+  mainWindow.focus()
+  mainWindow.webContents.send('app:deeplink', url)
 }
 
 function createMainWindow(): BrowserWindow {
@@ -172,23 +194,58 @@ function registerTodoIpc(): void {
   })
 }
 
-app.whenReady().then(() => {
-  autoUpdater.checkForUpdatesAndNotify();
-  electronApp.setAppUserModelId('com.electron')
+const gotTheLock = app.requestSingleInstanceLock()
 
-  app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window)
-  })
+if (!gotTheLock) {
+  app.quit()
+} else {
+  app.on('second-instance', (_event, commandLine) => {
+    const deepLink = getDeepLinkFromArgv(commandLine)
+    if (deepLink) {
+      handleDeepLink(deepLink)
+      return
+    }
 
-  initDatabase()
-  registerTodoIpc()
-  mainWindow = createMainWindow()
-
-  app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      mainWindow = createMainWindow()
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.focus()
     }
   })
+
+  app.whenReady().then(() => {
+    autoUpdater.checkForUpdatesAndNotify()
+    electronApp.setAppUserModelId('com.electron')
+
+    if (process.defaultApp && process.platform === 'win32') {
+      app.setAsDefaultProtocolClient(PROTOCOL, process.execPath, [resolve(process.argv[1])])
+    } else {
+      app.setAsDefaultProtocolClient(PROTOCOL)
+    }
+
+    app.on('browser-window-created', (_, window) => {
+      optimizer.watchWindowShortcuts(window)
+    })
+
+    initDatabase()
+    registerTodoIpc()
+    mainWindow = createMainWindow()
+
+    const initialDeepLink = getDeepLinkFromArgv(process.argv)
+    if (initialDeepLink) {
+      handleDeepLink(initialDeepLink)
+    }
+
+    app.on('activate', function () {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        mainWindow = createMainWindow()
+      }
+    })
+  })
+}
+
+app.on('open-url', (event, url) => {
+  event.preventDefault()
+  handleDeepLink(url)
 })
 
 app.on('window-all-closed', () => {

@@ -74,6 +74,13 @@ contextBridge.exposeInMainWorld('todoAPI', {
     ipcRenderer.on('todos:show-detail', wrappedListener)
     return () => ipcRenderer.off('todos:show-detail', wrappedListener)
   },
+  onDeepLink(listener: (url: string) => void) {
+    const wrappedListener = (_event: Electron.IpcRendererEvent, url: string) => {
+      listener(url)
+    }
+    ipcRenderer.on('app:deeplink', wrappedListener)
+    return () => ipcRenderer.off('app:deeplink', wrappedListener)
+  },
   toggle(id: number, completed: boolean) {
     return ipcRenderer.invoke('todos:toggle', id, completed)
   },

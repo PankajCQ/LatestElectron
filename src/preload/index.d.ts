@@ -18,6 +18,7 @@ type TodoAPI = {
   onCreated: (listener: (todo: Todo) => void) => () => void
   onShowAddPage: (listener: () => void) => () => void
   onShowDetail: (listener: (todo: Todo) => void) => () => void
+  onDeepLink: (listener: (url: string) => void) => () => void
   toggle: (id: number, completed: boolean) => Promise<Todo>
   remove: (id: number) => Promise<{ ok: true }>
 }

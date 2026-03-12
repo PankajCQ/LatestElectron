@@ -14,6 +14,7 @@ function App(): React.JSX.Element {
   const [searchQuery, setSearchQuery] = useState('')
   const [isAddPage, setIsAddPage] = useState(false)
   const [detailTodo, setDetailTodo] = useState<Todo | null>(null)
+  const [deepLinkUrl, setDeepLinkUrl] = useState<string | null>(null)
 
   useEffect(() => {
     const unsubscribe = window.todoAPI.onShowAddPage(() => {
@@ -42,6 +43,16 @@ function App(): React.JSX.Element {
     const unsubscribe = window.todoAPI.onShowDetail((todo) => {
       setDetailTodo(todo)
       setIsAddPage(false)
+    })
+
+    return () => {
+      unsubscribe()
+    }
+  }, [])
+
+  useEffect(() => {
+    const unsubscribe = window.todoAPI.onDeepLink((url) => {
+      setDeepLinkUrl(url)
     })
 
     return () => {
@@ -132,6 +143,15 @@ function App(): React.JSX.Element {
   return (
     <main className="todo-shell">
       <h1>Todos</h1>
+      {deepLinkUrl ? (
+        <div className="deep-link-banner">
+          <span>Opened from deep link:</span>
+          <code>{deepLinkUrl}</code>
+          <button type="button" className="ghost" onClick={() => setDeepLinkUrl(null)}>
+            Dismiss
+          </button>
+        </div>
+      ) : null}
       <div className="todo-form">
         <input
           value={searchQuery}

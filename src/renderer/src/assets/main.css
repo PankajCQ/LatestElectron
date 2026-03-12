@@ -38,6 +38,27 @@ h1 {
   margin-bottom: 16px;
 }
 
+.deep-link-banner {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #2b3657;
+  background: #0f172a;
+  color: #dbe8ff;
+  margin-bottom: 16px;
+}
+
+.deep-link-banner code {
+  background: #0b1224;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid #334062;
+  color: #c7d4f7;
+  display: block;
+  overflow-wrap: anywhere;
+}
+
 input {
   border: 1px solid #334062;
   background: #0b1224;
