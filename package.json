@@ -37,7 +37,6 @@
       "path": "pankaj/release/"
     },
     "mac": {
-      "identity": "Maanik Sharma (***)",
       "notarize": true,
       "target": [
         "dmg"
