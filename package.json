@@ -37,7 +37,7 @@
       "path": "pankaj/release/"
     },
     "mac": {
-      "identity": "Developer ID Application: Maanik Sharma (***)",
+      "identity": "Maanik Sharma (***)",
       "notarize": true,
       "target": [
         "dmg"
