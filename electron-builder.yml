@@ -1,5 +1,9 @@
-appId: com.electron.app
-productName: electron-app
+appId: com.pankajcq.latestelektron
+productName: LatestElectron
+protocols:
+  - name: LatestElectron
+    schemes:
+      - latestelectron
 directories:
   buildResources: build
 files:
@@ -11,6 +15,9 @@ files:
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
 asarUnpack:
   - resources/**
+extraResources:
+  - from: binaries
+    to: binaries
 win:
   executableName: electron-app
   signingHashAlgorithms:
@@ -23,22 +30,14 @@ nsis:
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
-  hardenedRuntime: true
-  entitlements: build/entitlements.mac.plist
-  entitlementsInherit: build/entitlements.mac.plist
-  extendInfo:
-    - NSCameraUsageDescription: Application requests access to the device's camera.
-    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
-    - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
-    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
   notarize: true
+  target:
+    - dmg
 dmg:
   artifactName: ${name}-${version}.${ext}
 linux:
   target:
     - AppImage
-    - snap
-    - deb
   maintainer: electronjs.org
   category: Utility
 appImage:
@@ -48,6 +47,7 @@ publish:
   provider: s3
   bucket: test-bucket-electron
   region: blr1
+  endpoint: https://blr1.digitaloceanspaces.com
   path: pankaj/release/
 electronDownload:
   mirror: https://artifacts.electronjs.org/

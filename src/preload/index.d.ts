@@ -22,6 +22,19 @@ type TodoAPI = {
   toggle: (id: number, completed: boolean) => Promise<Todo>
   remove: (id: number) => Promise<{ ok: true }>
   getTodo: (id: number) => Promise<Todo | null>
+  getSystemInfo: () => Promise<{
+    platform: string
+    release: string
+    version: string
+    arch: string
+    cpuCount: number
+    cpuModel: string
+    cpuSpeedMHz: number
+    totalMemBytes: number
+    freeMemBytes: number
+    hostname: string
+    uptimeSeconds: number
+  }>
 }
 
 declare global {

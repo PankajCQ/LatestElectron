@@ -90,4 +90,7 @@ contextBridge.exposeInMainWorld('todoAPI', {
   getTodo(id: number) {
     return ipcRenderer.invoke('todos:get', id)
   },
+  getSystemInfo() {
+    return ipcRenderer.invoke('get-system-info')
+   }
 })

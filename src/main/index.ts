@@ -1,5 +1,6 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join, resolve } from 'path'
+import fs from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import {
@@ -11,12 +12,17 @@ import {
   getTodo,
 } from '../database/database';
 import {autoUpdater} from 'electron-updater';
+import { spawn } from "child_process";
+import { Worker } from 'worker_threads'
+import { SystemInfo } from './worker/system-info'
 
 const PROTOCOL = 'latestElectron'
 
 let mainWindow: BrowserWindow | null = null
 let addWindow: BrowserWindow | null = null
 let detailWindow: BrowserWindow | null = null
+let systemInfoWorker: Worker | null = null
+let lastSystemInfo: SystemInfo | null = null
 
 function loadWindow(window: BrowserWindow, route?: string): void {
   const hash = route ? `#${route}` : '';
@@ -174,6 +180,77 @@ function createDetailWindow(options: {
   return window
 }
 
+function startSystemInfoWorker(): void {
+  if (systemInfoWorker) return;
+  const workerPath = app.isPackaged
+    ? join(__dirname, "worker", "system-info.js")
+    : join(process.cwd(), "src", "main", "worker", "system-info.ts");
+  if (!fs.existsSync(workerPath)) {
+    console.error('System info worker not found:', workerPath)
+    return
+  }
+
+  const worker = new Worker(workerPath)
+  systemInfoWorker = worker
+
+  worker.on('message', (info) => {
+    console.log('System info from worker:', info);
+    lastSystemInfo = info as SystemInfo;
+  })
+
+  worker.on('error', (error) => {
+    console.error('System info worker error:', error);
+  })
+
+  worker.on('exit', (code) => {
+    console.log('System info worker exited with code:', code);
+    systemInfoWorker = null;
+  })
+}
+
+function getSystemInfoFromWorker(): Promise<SystemInfo> {
+  if (!systemInfoWorker) {
+    startSystemInfoWorker();
+  }
+
+  const worker = systemInfoWorker;
+  if (!worker) {
+    return Promise.reject(new Error('System info worker is not available'))
+  }
+
+  return new Promise((resolve, reject) => {
+    const onMessage = (info: SystemInfo) => {
+      cleanup()
+      resolve(info)
+    }
+
+    const onError = (error: Error) => {
+      cleanup()
+      reject(error)
+    }
+
+    const onExit = (code: number) => {
+      cleanup()
+      if (code !== 0) {
+        reject(new Error(`System info worker exited with code: ${code}`))
+      } else if (lastSystemInfo) {
+        resolve(lastSystemInfo)
+      }
+    }
+
+    const cleanup = () => {
+      worker.off('message', onMessage)
+      worker.off('error', onError)
+      worker.off('exit', onExit)
+    }
+
+    worker.on('message', onMessage)
+    worker.on('error', onError)
+    worker.on('exit', onExit)
+    worker.postMessage('get')
+  })
+}
+
 function registerTodoIpc(): void {
   ipcMain.handle('todos:list', () => listTodos())
 
@@ -232,6 +309,50 @@ function registerTodoIpc(): void {
   ipcMain.handle('todos:get', (_event, id: number) => {
     return getTodo(id)
   })
+  ipcMain.handle('get-system-info', () => {
+    return getSystemInfoFromWorker()
+  })
+}
+
+function runfzfBinary(): void {
+  const fzfBinaryName = process.platform === 'win32' ? 'fzf.exe' : 'fzf'
+  const packagedPath = join(process.resourcesPath, 'binaries', fzfBinaryName)
+  const devRoot = resolve(app.getAppPath(), '..', '..')
+  const devPath = join(devRoot, 'binaries', fzfBinaryName)
+  const fzfPath = app.isPackaged
+    ? packagedPath
+    : (fs.existsSync(devPath) ? devPath : join(process.cwd(), 'binaries', fzfBinaryName))
+
+  if (!fs.existsSync(fzfPath)) {
+    console.error('fzf binary not found:', fzfPath)
+    return
+  }
+
+  const sampleItems = ['alpha', 'beta', 'gamma', 'delta']
+  const fzfArgs = ['--filter', 'beta']
+
+  console.log('Running fzf binary with args:', fzfArgs.join(' '))
+
+  const child = spawn(fzfPath, fzfArgs, { stdio: ['pipe', 'pipe', 'pipe'] })
+
+  child.stdout.on('data', (data) => {
+    console.log('fzf stdout:', data.toString())
+  })
+
+  child.stderr.on('data', (data) => {
+    console.error('fzf stderr:', data.toString())
+  })
+
+  child.on('error', (error) => {
+    console.error('Error running fzf:', error)
+  })
+
+  child.on('close', (code) => {
+    console.log('fzf exited with code:', code)
+  })
+
+  child.stdin.write(sampleItems.join('\n'))
+  child.stdin.end()
 }
 
 const gotTheLock = app.requestSingleInstanceLock()
@@ -266,14 +387,16 @@ if (!gotTheLock) {
       optimizer.watchWindowShortcuts(window)
     })
 
-    initDatabase()
-    registerTodoIpc()
-    mainWindow = createMainWindow()
+    initDatabase();
+    registerTodoIpc();
+    mainWindow = createMainWindow();
 
     const initialDeepLink = getDeepLinkFromArgv(process.argv)
     if (initialDeepLink) {
       handleDeepLink(initialDeepLink)
     }
+
+    runfzfBinary();
 
     app.on('activate', function () {
       if (BrowserWindow.getAllWindows().length === 0) {

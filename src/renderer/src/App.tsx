@@ -8,12 +8,28 @@ type Todo = {
   completed: boolean
 }
 
+type SystemInfo = {
+  platform: string
+  release: string
+  version: string
+  arch: string
+  cpuCount: number
+  cpuModel: string
+  cpuSpeedMHz: number
+  totalMemBytes: number
+  freeMemBytes: number
+  hostname: string
+  uptimeSeconds: number
+}
+
 function App(): React.JSX.Element {
   const [todos, setTodos] = useState<Todo[]>([])
   const [newTodoText, setNewTodoText] = useState('')
   const [newTodoDescription, setNewTodoDescription] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [isAddPage, setIsAddPage] = useState(false)
+  const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null)
+  const [systemInfoError, setSystemInfoError] = useState<string | null>(null)
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -105,6 +121,17 @@ function App(): React.JSX.Element {
     navigate('/', { replace: true })
   }
 
+  const handleGetSystemInfo = async (): Promise<void> => {
+    setSystemInfoError(null)
+    try {
+      const info = await window.todoAPI.getSystemInfo()
+      setSystemInfo(info)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load system info'
+      setSystemInfoError(message)
+    }
+  }
+
   const addPage = (
     <main className="todo-shell">
       <h1>Add Todo</h1>
@@ -171,7 +198,29 @@ function App(): React.JSX.Element {
 
   const listPage = (
     <main className="todo-shell">
-      <h1>Todos</h1>
+      <div>
+        <h1>Todos</h1>
+        <button type="button" onClick={() => void handleGetSystemInfo()}>
+          Get System Details
+        </button>
+      </div>
+      {systemInfoError ? <p>{systemInfoError}</p> : null}
+      {systemInfo ? (
+        <div className="todo-detail">
+          <h2>System Info</h2>
+          <p>
+            {systemInfo.platform} {systemInfo.release} ({systemInfo.arch})
+          </p>
+          <p>Version: {systemInfo.version || 'unknown'}</p>
+          <p>CPU: {systemInfo.cpuModel}</p>
+          <p>Cores: {systemInfo.cpuCount}</p>
+          <p>Speed: {systemInfo.cpuSpeedMHz} MHz</p>
+          <p>Hostname: {systemInfo.hostname}</p>
+          <p>Uptime: {systemInfo.uptimeSeconds}s</p>
+          <p>Total Mem: {systemInfo.totalMemBytes} bytes</p>
+          <p>Free Mem: {systemInfo.freeMemBytes} bytes</p>
+        </div>
+      ) : null}
       <div className="todo-form">
         <input
           value={searchQuery}
