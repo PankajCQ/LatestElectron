@@ -49,5 +49,3 @@ publish:
   region: blr1
   endpoint: https://blr1.digitaloceanspaces.com
   path: pankaj/release/
-electronDownload:
-  mirror: https://artifacts.electronjs.org/
