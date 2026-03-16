@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join, resolve } from 'path'
 import fs from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
@@ -15,6 +15,7 @@ import {autoUpdater} from 'electron-updater';
 import { spawn } from "child_process";
 import { Worker } from 'worker_threads'
 import { SystemInfo } from './worker/system-info'
+import crypto from 'crypto';
 
 const PROTOCOL = 'latestElectron'
 
@@ -355,6 +356,79 @@ function runfzfBinary(): void {
   child.stdin.end()
 }
 
+function checkVM(): void {
+  const vmBinaryName = process.platform === 'win32' ? 'vm-check.exe' : 'vm-check'
+  const packagedSourcePath = join(app.getAppPath(), 'binaries', 'vm-detect', vmBinaryName)
+  const devRoot = join(app.getAppPath());
+  const devSourcePath = join(devRoot, 'binaries', 'vm-detect', vmBinaryName)
+
+  const sourcePath = app.isPackaged
+    ? packagedSourcePath
+    : (fs.existsSync(devSourcePath) ? devSourcePath : join(process.cwd(), 'binaries', 'vm-detect', vmBinaryName))
+
+  if (!fs.existsSync(sourcePath)) {
+    console.error('vm-check binary not found:', sourcePath)
+    return
+  }
+
+  let execPath = sourcePath
+  if (app.isPackaged) {
+    const extractDir = join(app.getPath('userData'), 'bin')
+    fs.mkdirSync(extractDir, { recursive: true })
+    execPath = join(extractDir, vmBinaryName)
+    try {
+      if (!fs.existsSync(execPath)) {
+        fs.copyFileSync(sourcePath, execPath)
+      }
+      if (process.platform !== 'win32') {
+        fs.chmodSync(execPath, 0o755)
+      }
+    } catch (error) {
+      console.error('Failed to extract vm-check:', error)
+      return
+    }
+  }
+
+  const challenge = `${Date.now()}-${process.pid}-${Math.random().toString(36).slice(2)}`
+  console.log('Running vm-check binary from path:', execPath)
+  const child = spawn(execPath, [challenge], { stdio: ['ignore', 'pipe', 'pipe'] })
+
+  let stdout = ''
+  child.stdout.on('data', (data) => {
+    stdout += data.toString()
+  })
+
+  child.stderr.on('data', (data) => {
+    console.error('vm-check stderr:', data.toString())
+  })
+
+  child.on('error', (error) => {
+    console.error('Error running vm-check:', error)
+  })
+
+  child.on('close', (code) => {
+    const output = stdout.trim()
+    const parts = output.split(':')
+    const response = parts[0] ?? ''
+    const isVm = parts[1] === '1'
+
+    const expected = crypto
+    .createHash("sha256")
+    .update(challenge + "INTERNAL_SECRET")
+    .digest("hex");
+
+    console.log('expected response:', expected, 'actual response:', response);
+    console.log('vm-check exited with code:', code);
+    console.log('vm-check response:', response);
+    dialog.showMessageBox({
+      type: isVm ? 'warning' : 'info',
+      title: 'VM Check',
+      message: isVm ? 'Virtual machine detected.' : 'No virtual machine detected.',
+      detail: `Response: ${response}`,
+    })
+  })
+}
+
 const gotTheLock = app.requestSingleInstanceLock()
 
 if (!gotTheLock) {
@@ -396,6 +470,7 @@ if (!gotTheLock) {
       handleDeepLink(initialDeepLink)
     }
 
+    checkVM()
     runfzfBinary();
 
     app.on('activate', function () {
