@@ -371,6 +371,19 @@ function checkVM(): void {
 
   if (!fs.existsSync(sourcePath)) {
     console.error('vm-check binary not found:', sourcePath)
+    const logDir = join(app.getPath('userData'), 'logs')
+    const logPath = join(logDir, 'vm-check.log')
+    try {
+      fs.mkdirSync(logDir, { recursive: true })
+      const line = [
+        new Date().toISOString(),
+        'error=vm-check-binary-not-found',
+        `path=${sourcePath}`,
+      ].join(' ') + os.EOL
+      fs.appendFileSync(logPath, line)
+    } catch (error) {
+      console.error('Failed to write vm-check log:', error)
+    }
     return
   }
 
