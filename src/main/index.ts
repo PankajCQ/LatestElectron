@@ -16,6 +16,7 @@ import { spawn } from "child_process";
 import { Worker } from 'worker_threads'
 import { SystemInfo } from './worker/system-info'
 import crypto from 'crypto';
+import os from 'os'
 
 const PROTOCOL = 'latestElectron'
 
@@ -412,6 +413,8 @@ function checkVM(): void {
     const response = parts[0] ?? ''
     const isVm = parts[1] === '1'
 
+    console.log('vm-check stdout:', parts)
+
     const expected = crypto
     .createHash("sha256")
     .update(challenge + "INTERNAL_SECRET")
@@ -420,6 +423,23 @@ function checkVM(): void {
     console.log('expected response:', expected, 'actual response:', response);
     console.log('vm-check exited with code:', code);
     console.log('vm-check response:', response);
+
+    const logDir = join(app.getPath('userData'), 'logs')
+    const logPath = join(logDir, 'vm-check.log')
+    try {
+      fs.mkdirSync(logDir, { recursive: true })
+      const line = [
+        new Date().toISOString(),
+        `code=${code}`,
+        `isVm=${isVm ? '1' : '0'}`,
+        `response=${parts}`,
+      ].join(' ') + os.EOL
+      fs.appendFileSync(logPath, line);
+      console.log('vm-check log written to:', logPath)
+    } catch (error) {
+      console.error('Failed to write vm-check log:', error)
+    }
+
     dialog.showMessageBox({
       type: isVm ? 'warning' : 'info',
       title: 'VM Check',
