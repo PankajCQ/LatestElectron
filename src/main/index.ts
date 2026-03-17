@@ -184,9 +184,11 @@ function createDetailWindow(options: {
 
 function startSystemInfoWorker(): void {
   if (systemInfoWorker) return;
+  const builtWorkerPath = join(__dirname, "worker", "system-info.js");
+  const devWorkerPath = join(process.cwd(), "src", "main", "worker", "system-info.ts");
   const workerPath = app.isPackaged
-    ? join(__dirname, "worker", "system-info.js")
-    : join(process.cwd(), "src", "main", "worker", "system-info.ts");
+    ? builtWorkerPath
+    : (fs.existsSync(builtWorkerPath) ? builtWorkerPath : devWorkerPath);
   if (!fs.existsSync(workerPath)) {
     console.error('System info worker not found:', workerPath)
     return
