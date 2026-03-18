@@ -374,7 +374,9 @@ function checkVM(): void {
     const logDir = join(app.getPath('userData'), 'logs')
     const logPath = join(logDir, 'vm-check.log')
     try {
-      fs.mkdirSync(logDir, { recursive: true })
+      if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true })
+      }
       const line = [
         new Date().toISOString(),
         'error=vm-check-binary-not-found',
@@ -400,7 +402,22 @@ function checkVM(): void {
         fs.chmodSync(execPath, 0o755)
       }
     } catch (error) {
-      console.error('Failed to extract vm-check:', error)
+      console.error('Failed to extract vm-check:', error);
+      const logDir = join(app.getPath('userData'), 'logs')
+      const logPath = join(logDir, 'vm-check.log')
+      try {
+        if (!fs.existsSync(logDir)) {
+          fs.mkdirSync(logDir, { recursive: true })
+        }
+        const line = [
+          new Date().toISOString(),
+          'error=vm-check-binary-not-found',
+          `path=${sourcePath}`,
+        ].join(' ') + os.EOL
+        fs.appendFileSync(logPath, line)
+      } catch (error) {
+        console.error('Failed to write vm-check log:', error)
+      }
       return
     }
   }
@@ -442,7 +459,9 @@ function checkVM(): void {
     const logDir = join(app.getPath('userData'), 'logs')
     const logPath = join(logDir, 'vm-check.log')
     try {
-      fs.mkdirSync(logDir, { recursive: true })
+      if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true })
+      }
       const line = [
         new Date().toISOString(),
         `code=${code}`,
