@@ -374,6 +374,7 @@ function runfzfBinary(): void {
 }
 
 function checkVM(): void {
+  appendAppLog('checkVM start')
   const vmBinaryName = process.platform === 'win32' ? 'vm-check.exe' : 'vm-check'
   const packagedSourcePath = join(app.getAppPath(), 'binaries', 'vm-detect', vmBinaryName)
   const devRoot = join(app.getAppPath());
@@ -385,6 +386,7 @@ function checkVM(): void {
 
   if (!fs.existsSync(sourcePath)) {
     console.error('vm-check binary not found:', sourcePath)
+    appendAppLog(`checkVM binary missing path=${sourcePath}`)
     const logDir = join(app.getPath('userData'), 'logs')
     const logPath = join(logDir, 'vm-check.log')
     try {
@@ -417,6 +419,7 @@ function checkVM(): void {
       }
     } catch (error) {
       console.error('Failed to extract vm-check:', error);
+      appendAppLog('checkVM extract failed')
       const logDir = join(app.getPath('userData'), 'logs')
       const logPath = join(logDir, 'vm-check.log')
       try {
@@ -438,6 +441,7 @@ function checkVM(): void {
 
   const challenge = `${Date.now()}-${process.pid}-${Math.random().toString(36).slice(2)}`
   console.log('Running vm-check binary from path:', execPath)
+  appendAppLog(`checkVM spawn path=${execPath}`)
   const child = spawn(execPath, [challenge], { stdio: ['ignore', 'pipe', 'pipe'] })
 
   let stdout = ''
