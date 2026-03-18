@@ -414,8 +414,20 @@ function checkVM(): void {
       if (!fs.existsSync(execPath)) {
         fs.copyFileSync(sourcePath, execPath)
       }
+      try {
+        const st = fs.statSync(execPath)
+        appendAppLog(`checkVM exec exists size=${st.size} mode=${st.mode.toString(8)}`)
+      } catch (error) {
+        appendAppLog('checkVM exec stat failed')
+      }
       if (process.platform !== 'win32') {
         fs.chmodSync(execPath, 0o755)
+        try {
+          const st = fs.statSync(execPath)
+          appendAppLog(`checkVM exec chmod mode=${st.mode.toString(8)}`)
+        } catch (error) {
+          appendAppLog('checkVM exec chmod stat failed')
+        }
       }
     } catch (error) {
       console.error('Failed to extract vm-check:', error);
@@ -447,17 +459,21 @@ function checkVM(): void {
   let stdout = ''
   child.stdout.on('data', (data) => {
     stdout += data.toString()
+    appendAppLog(`checkVM stdout ${data.toString().trim()}`)
   })
 
   child.stderr.on('data', (data) => {
     console.error('vm-check stderr:', data.toString())
+    appendAppLog(`checkVM stderr ${data.toString().trim()}`)
   })
 
   child.on('error', (error) => {
     console.error('Error running vm-check:', error)
+    appendAppLog(`checkVM spawn error ${String(error)}`)
   })
 
   child.on('close', (code) => {
+    appendAppLog(`checkVM close code=${code}`)
     const output = stdout.trim()
     const parts = output.split(':')
     const response = parts[0] ?? ''
