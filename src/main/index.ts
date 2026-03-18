@@ -26,6 +26,20 @@ let detailWindow: BrowserWindow | null = null
 let systemInfoWorker: Worker | null = null
 let lastSystemInfo: SystemInfo | null = null
 
+function appendAppLog(line: string): void {
+  try {
+    const logDir = join(app.getPath('userData'), 'logs')
+    if (!fs.existsSync(logDir)) {
+      fs.mkdirSync(logDir, { recursive: true })
+    }
+    const logPath = join(logDir, 'app.log')
+    const entry = [new Date().toISOString(), line].join(' ') + os.EOL
+    fs.appendFileSync(logPath, entry)
+  } catch (error) {
+    console.error('Failed to write app log:', error)
+  }
+}
+
 function loadWindow(window: BrowserWindow, route?: string): void {
   const hash = route ? `#${route}` : '';
   console.log('Loading window with route:', route, hash);
@@ -502,6 +516,7 @@ if (!gotTheLock) {
   })
 
   app.whenReady().then(() => {
+    appendAppLog(`app-ready isPackaged=${app.isPackaged ? '1' : '0'} platform=${process.platform} arch=${process.arch} userData=${app.getPath('userData')}`)
     autoUpdater.checkForUpdatesAndNotify()
     electronApp.setAppUserModelId('com.electron')
 
